@@ -27,6 +27,14 @@ align-items:center;
 .ticket{color:#ff5555;}
 .coin{color:#ffd700;}
 
+/* VERIFICADO */
+.verificado{
+width:16px;
+height:16px;
+vertical-align:middle;
+margin-left:5px;
+}
+
 /* CONTENT */
 #content{
 padding:20px;
@@ -125,6 +133,11 @@ const db=getDatabase(app);
 const content=document.getElementById("content");
 const userInfo=document.getElementById("userInfo");
 
+/* VERIFICADOS (SÓ TOKERA) */
+const verificados = {
+  "tokera": true
+};
+
 /* LOGIN */
 let usuarioAtual=localStorage.getItem("usuario");
 
@@ -177,6 +190,11 @@ onDisconnect(onlineRef).set(false);
 onValue(ref(db,"usuarios/"+usuarioAtual),(snap)=>{
 const d=snap.val();
 userInfo.innerHTML=`
+<b>
+${usuarioAtual}
+${verificados[usuarioAtual] ? `<img src="https://cdn-icons-png.flaticon.com/512/6711/6711626.png" class="verificado">` : ""}
+</b>
+&nbsp;&nbsp;
 <span class="ticket">🎟 ${d.ticket||0}</span>
 &nbsp;&nbsp;
 <span class="coin">🪙 ${d.tokecoin||0}</span>
@@ -225,9 +243,13 @@ snap.forEach(u=>{
 const nome=u.key;
 if(nome===usuarioAtual) return;
 const d=u.val();
+
 html+=`
 <div class="userCard">
-<b>${nome}</b>
+<b>
+${nome}
+${verificados[nome] ? `<img src="https://cdn-icons-png.flaticon.com/512/6711/6711626.png" class="verificado">` : ""}
+</b>
 <span class="${d.online?'online':'offline'}">
 (${d.online?'On':'Off'})
 </span>
@@ -242,7 +264,7 @@ window.openFriends=function(){
 content.innerHTML="<h2>Amigos</h2>";
 };
 
-/* SHOP COM AVATAR */
+/* SHOP */
 window.openShop=async function(){
 const refUser=ref(db,"usuarios/"+usuarioAtual);
 const d=(await get(refUser)).val();
