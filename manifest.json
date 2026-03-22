@@ -2,7 +2,7 @@
   "name": "Tokera",
   "short_name": "Tokera",
   "description": "Tokera is a gaming platform where you can make friends and play games!",
-  "start_url": "/",
+  "start_url": "/Tokera/",
   "scope": "/",
   "display": "fullscreen",
   "orientation": "portrait",
