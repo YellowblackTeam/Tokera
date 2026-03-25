@@ -54,11 +54,25 @@ padding:12px 0;
 /* CARDS */
 .userCard{
 background:#222;
-margin:10px;
-padding:14px;
+padding:10px;
 border-radius:10px;
+text-align:center;
 }
 
+/* 👇 AMIGOS PRO LADO */
+#amigosLista{
+display:flex;
+gap:10px;
+overflow-x:auto;
+padding:10px;
+}
+
+#amigosLista .userCard{
+min-width:120px;
+flex-shrink:0;
+}
+
+/* STATUS */
 .online{color:#00ff88;}
 .offline{color:#888;}
 
@@ -95,7 +109,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase,ref,get,set,update,onValue,onDisconnect }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-/* 🔥 SEU FIREBASE ORIGINAL */
+/* FIREBASE */
 const firebaseConfig={
 apiKey:"AIzaSyBzWOV7rpIQTB43cJtJMOuSazm6KxfMQP4",
 authDomain:"tokera-2244b.firebaseapp.com",
@@ -112,7 +126,6 @@ const db=getDatabase(app);
 const content=document.getElementById("content");
 const userInfo=document.getElementById("userInfo");
 
-/* VERIFICADOS */
 const verificados = {
   "tokera": true
 };
@@ -165,11 +178,7 @@ onDisconnect(onlineRef).set(false);
 onValue(ref(db,"usuarios/"+usuarioAtual),(snap)=>{
 const d=snap.val();
 userInfo.innerHTML=`
-<b>
-${usuarioAtual}
-${verificados[usuarioAtual] ? `<img src="https://cdn-icons-png.flaticon.com/512/6711/6711626.png" class="verificado">` : ""}
-</b>
-&nbsp;&nbsp;
+<b>${usuarioAtual}</b>
 <span class="coin">
 <img src="./TokeCoin.png" style="width:16px;vertical-align:middle;">
 ${d.tokecoin||0}
@@ -194,19 +203,21 @@ const d = userSnap.val();
 amigosHTML+=`
 <div class="userCard">
 <b>${nome}</b>
-<span class="${d.online?'online':'offline'}">
-(${d.online?'On':'Off'})
-</span>
+<div class="${d.online?'online':'offline'}">
+${d.online?'● Online':'● Offline'}
+</div>
 </div>`;
 }
 }else{
-amigosHTML="<p>Sem amigos ainda 😢</p>";
+amigosHTML="<p>Sem amigos</p>";
 }
 
 content.innerHTML=`
 <h2>Olá, ${usuarioAtual}!</h2>
 <h3>Amigos:</h3>
+<div id="amigosLista">
 ${amigosHTML}
+</div>
 `;
 });
 };
@@ -228,21 +239,16 @@ const jaAmigo = meusAmigos[nome];
 
 html+=`
 <div class="userCard">
-<b>
-${nome}
-${verificados[nome] ? `<img src="https://cdn-icons-png.flaticon.com/512/6711/6711626.png" class="verificado">` : ""}
-</b>
-<br>
-<span class="${d.online?'online':'offline'}">
-(${d.online?'On':'Off'})
-</span>
+<b>${nome}</b>
+<div class="${d.online?'online':'offline'}">
+${d.online?'● Online':'● Offline'}
+</div>
 
-<button class="btn" 
-${jaAmigo ? "disabled" : ""}
+<button class="btn"
+${jaAmigo?"disabled":""}
 onclick="addFriend('${nome}')">
-${jaAmigo ? "Amigo ✔" : "Adicionar Amigo"}
+${jaAmigo?"Amigo ✔":"Adicionar"}
 </button>
-
 </div>`;
 });
 
