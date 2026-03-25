@@ -3,8 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#000000">
 <title>Tokera</title>
 
 <style>
@@ -24,10 +22,8 @@ justify-content:space-between;
 align-items:center;
 }
 
-.ticket{color:#ff5555;}
 .coin{color:#ffd700;}
 
-/* VERIFICADO */
 .verificado{
 width:16px;
 height:16px;
@@ -56,39 +52,23 @@ padding:12px 0;
 .downbtn{cursor:pointer;}
 
 /* CARDS */
-.userCard,.gameCard{
+.userCard{
 background:#222;
 margin:10px;
 padding:14px;
 border-radius:10px;
 }
 
-/* STATUS */
 .online{color:#00ff88;}
 .offline{color:#888;}
 
-/* GRID */
-.gamesGrid{
-display:grid;
-grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
-gap:14px;
-margin-top:20px;
-}
-
-.gameIcon{
-width:80px;
-height:80px;
-border-radius:16px;
-object-fit:cover;
-margin-bottom:8px;
-}
-
-.playBtn{
-background:#00ff88;
+.btn{
+margin-top:10px;
+padding:6px;
 border:none;
 border-radius:6px;
-padding:8px;
 cursor:pointer;
+background:#00ff88;
 width:100%;
 }
 </style>
@@ -106,7 +86,6 @@ width:100%;
 <div id="downbar">
 <div class="downbtn" onclick="goHome()">Home</div>
 <div class="downbtn" onclick="openUsers()">Users</div>
-<div class="downbtn" onclick="openFriends()">Friends</div>
 <div class="downbtn" onclick="openBank()">Bank</div>
 <div class="downbtn" onclick="openShop()">Shop</div>
 </div>
@@ -116,7 +95,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase,ref,get,set,update,onValue,onDisconnect }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-/* FIREBASE */
+/* 🔥 SEU FIREBASE ORIGINAL */
 const firebaseConfig={
 apiKey:"AIzaSyBzWOV7rpIQTB43cJtJMOuSazm6KxfMQP4",
 authDomain:"tokera-2244b.firebaseapp.com",
@@ -133,7 +112,7 @@ const db=getDatabase(app);
 const content=document.getElementById("content");
 const userInfo=document.getElementById("userInfo");
 
-/* VERIFICADOS (SÓ TOKERA) */
+/* VERIFICADOS */
 const verificados = {
   "tokera": true
 };
@@ -164,13 +143,9 @@ const snap=await get(userRef);
 if(!snap.exists()){
 await set(userRef,{
 senha,
-ticket:0,
 tokecoin:0,
 online:true,
-PFP:0,
-roupa:0,
-amigos:{},
-presentes:{pendentes:0}
+amigos:{}
 });
 }else if(snap.val().senha!==senha){
 return alert("Senha errada");
@@ -195,9 +170,10 @@ ${usuarioAtual}
 ${verificados[usuarioAtual] ? `<img src="https://cdn-icons-png.flaticon.com/512/6711/6711626.png" class="verificado">` : ""}
 </b>
 &nbsp;&nbsp;
-<span class="ticket">🎟 ${d.ticket||0}</span>
-&nbsp;&nbsp;
-<span class="coin">🪙 ${d.tokecoin||0}</span>
+<span class="coin">
+<img src="./TokeCoin.png" style="width:16px;vertical-align:middle;">
+${d.tokecoin||0}
+</span>
 `;
 });
 
@@ -206,43 +182,49 @@ goHome();
 
 /* HOME */
 window.goHome=function(){
-content.innerHTML="<h1>Home</h1>";
-};
+onValue(ref(db,"usuarios/"+usuarioAtual+"/amigos"), async (snap)=>{
 
-/* BANK */
-window.openBank=async function(){
-const d=(await get(ref(db,"usuarios/"+usuarioAtual))).val();
+let amigosHTML="";
+
+if(snap.exists()){
+for(const nome in snap.val()){
+const userSnap = await get(ref(db,"usuarios/"+nome));
+const d = userSnap.val();
+
+amigosHTML+=`
+<div class="userCard">
+<b>${nome}</b>
+<span class="${d.online?'online':'offline'}">
+(${d.online?'On':'Off'})
+</span>
+</div>`;
+}
+}else{
+amigosHTML="<p>Sem amigos ainda 😢</p>";
+}
 
 content.innerHTML=`
-<h2>🏦 Bank</h2>
-<div class="gameCard">
-<p><b>10 🎟 = 1 🪙</b></p>
-<button class="playBtn"
-${d.ticket<10?"disabled":""}
-onclick="converterCoin()">Converter</button>
-</div>
+<h2>Olá, ${usuarioAtual}!</h2>
+<h3>Amigos:</h3>
+${amigosHTML}
 `;
-};
-
-window.converterCoin=async function(){
-const refUser=ref(db,"usuarios/"+usuarioAtual);
-const d=(await get(refUser)).val();
-if(d.ticket<10) return alert("Precisa de 10 tickets!");
-await update(refUser,{
-ticket:d.ticket-10,
-tokecoin:(d.tokecoin||0)+1
 });
-openBank();
 };
 
 /* USERS */
 window.openUsers=function(){
-onValue(ref(db,"usuarios"),snap=>{
+onValue(ref(db,"usuarios"), async snap=>{
 let html="<h2>Users</h2>";
+
+const myFriendsSnap = await get(ref(db,"usuarios/"+usuarioAtual+"/amigos"));
+const meusAmigos = myFriendsSnap.exists() ? myFriendsSnap.val() : {};
+
 snap.forEach(u=>{
 const nome=u.key;
 if(nome===usuarioAtual) return;
+
 const d=u.val();
+const jaAmigo = meusAmigos[nome];
 
 html+=`
 <div class="userCard">
@@ -250,71 +232,41 @@ html+=`
 ${nome}
 ${verificados[nome] ? `<img src="https://cdn-icons-png.flaticon.com/512/6711/6711626.png" class="verificado">` : ""}
 </b>
+<br>
 <span class="${d.online?'online':'offline'}">
 (${d.online?'On':'Off'})
 </span>
+
+<button class="btn" 
+${jaAmigo ? "disabled" : ""}
+onclick="addFriend('${nome}')">
+${jaAmigo ? "Amigo ✔" : "Adicionar Amigo"}
+</button>
+
 </div>`;
 });
+
 content.innerHTML=html;
 });
 };
 
-/* FRIENDS */
-window.openFriends=function(){
-content.innerHTML="<h2>Amigos</h2>";
+/* ADD FRIEND */
+window.addFriend=async function(nome){
+await set(ref(db,"usuarios/"+usuarioAtual+"/amigos/"+nome), true);
+await set(ref(db,"usuarios/"+nome+"/amigos/"+usuarioAtual), true);
+
+alert("Agora vocês são amigos!");
+openUsers();
+};
+
+/* BANK */
+window.openBank=function(){
+content.innerHTML=`<h2>Bank</h2><p>Em breve...</p>`;
 };
 
 /* SHOP */
-window.openShop=async function(){
-const refUser=ref(db,"usuarios/"+usuarioAtual);
-const d=(await get(refUser)).val();
-const roupa=d.roupa||0;
-
-const roupas={
-1:"./Avatar/Shrek.png",
-2:"./Avatar/Tokera.png",
-3:"./Avatar/Turbo.png"
-};
-
-content.innerHTML=`
-<div style="display:flex;flex-direction:column;align-items:center">
-
-<div style="position:relative;width:200px;height:200px;margin-bottom:20px;">
-<img src="./Avatar/original.png"
-style="width:100%;height:100%;position:absolute;">
-${roupa?`<img src="${roupas[roupa]}"
-style="width:100%;height:100%;position:absolute;">`:""}
-</div>
-
-<div class="gamesGrid">
-
-<div class="gameCard">
-<img src="./Avatar/Shrek.png" class="gameIcon">
-<button class="playBtn" onclick="equipar(1)">Shrek</button>
-</div>
-
-<div class="gameCard">
-<img src="./Avatar/Tokera.png" class="gameIcon">
-<button class="playBtn" onclick="equipar(2)">Tokera</button>
-</div>
-
-<div class="gameCard">
-<img src="./Avatar/Turbo.png" class="gameIcon">
-<button class="playBtn" onclick="equipar(3)">Turbo</button>
-</div>
-
-<div class="gameCard">
-<button class="playBtn" onclick="equipar(0)">Remover</button>
-</div>
-
-</div>
-</div>
-`;
-};
-
-window.equipar=async function(id){
-await update(ref(db,"usuarios/"+usuarioAtual),{roupa:id});
-openShop();
+window.openShop=function(){
+content.innerHTML=`<h2>Shop</h2><p>Em breve...</p>`;
 };
 
 </script>
