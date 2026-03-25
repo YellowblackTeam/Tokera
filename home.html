@@ -8,83 +8,61 @@
 <style>
 body{
 margin:0;
-background:#111;
-color:white;
 font-family:Arial;
+color:white;
+
+/* 🔥 BACKGROUND */
+background:url("https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/57992d3d-b37f-4eb3-8d98-e2e09749ac20/dj5puy7-1c1d652f-0555-46a2-bc58-866e87da71b7.png") no-repeat center center fixed;
+background-size:cover;
 }
 
-/* TOP BAR */
+/* TOP */
 #topbar{
-background:#1a1a1a;
-padding:12px;
+background:rgba(0,0,0,0.6);
+padding:10px;
 display:flex;
 justify-content:space-between;
-align-items:center;
 }
 
-.coin{color:#ffd700;}
-
-.verificado{
-width:16px;
-height:16px;
-vertical-align:middle;
-margin-left:5px;
+/* GRID */
+#menu{
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:15px;
+padding:20px;
 }
 
-/* CONTENT */
-#content{
+/* CARD */
+.card{
+background:linear-gradient(#2c5f9e,#1e3f6d);
+border-radius:10px;
 padding:20px;
 text-align:center;
-margin-bottom:90px;
-}
-
-/* DOWN BAR */
-#downbar{
-position:fixed;
-bottom:0;
-width:100%;
-background:#1a1a1a;
-display:flex;
-justify-content:space-around;
-padding:12px 0;
-}
-
-.downbtn{cursor:pointer;}
-
-/* CARDS */
-.userCard{
-background:#222;
-padding:10px;
-border-radius:10px;
-text-align:center;
-}
-
-/* 👇 AMIGOS PRO LADO */
-#amigosLista{
-display:flex;
-gap:10px;
-overflow-x:auto;
-padding:10px;
-}
-
-#amigosLista .userCard{
-min-width:120px;
-flex-shrink:0;
-}
-
-/* STATUS */
-.online{color:#00ff88;}
-.offline{color:#888;}
-
-.btn{
-margin-top:10px;
-padding:6px;
-border:none;
-border-radius:6px;
 cursor:pointer;
-background:#00ff88;
-width:100%;
+box-shadow:0 0 10px rgba(0,0,0,0.5);
+transition:0.2s;
 }
+
+.card:hover{
+transform:scale(1.05);
+}
+
+.card img{
+width:80px;
+margin-bottom:10px;
+}
+
+/* USERS LIST */
+.userCard{
+background:rgba(0,0,0,0.6);
+padding:10px;
+margin:5px;
+border-radius:8px;
+}
+
+.online{color:#00ff88;}
+.offline{color:#aaa;}
+
 </style>
 </head>
 
@@ -95,18 +73,11 @@ width:100%;
 <div id="userInfo">...</div>
 </div>
 
-<div id="content">Carregando...</div>
-
-<div id="downbar">
-<div class="downbtn" onclick="goHome()">Home</div>
-<div class="downbtn" onclick="openUsers()">Users</div>
-<div class="downbtn" onclick="openBank()">Bank</div>
-<div class="downbtn" onclick="openShop()">Shop</div>
-</div>
+<div id="content"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase,ref,get,set,update,onValue,onDisconnect }
+import { getDatabase,ref,get,set,onValue,onDisconnect }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 /* FIREBASE */
@@ -126,40 +97,32 @@ const db=getDatabase(app);
 const content=document.getElementById("content");
 const userInfo=document.getElementById("userInfo");
 
-const verificados = {
-  "tokera": true
-};
-
-/* LOGIN */
 let usuarioAtual=localStorage.getItem("usuario");
 
 if(!usuarioAtual) mostrarLogin();
 else startApp();
 
+/* LOGIN */
 function mostrarLogin(){
 content.innerHTML=`
-<h2>Login</h2>
+<h2 style="text-align:center">Login</h2>
+<center>
 <input id="nome" placeholder="Usuário"><br><br>
 <input id="senha" type="password" placeholder="Senha"><br><br>
 <button onclick="login()">Entrar</button>
+</center>
 `;
 }
 
 window.login=async function(){
 const nome=document.getElementById("nome").value.trim().toLowerCase();
 const senha=document.getElementById("senha").value.trim();
-if(!nome||!senha) return alert("Preencha tudo");
 
 const userRef=ref(db,"usuarios/"+nome);
 const snap=await get(userRef);
 
 if(!snap.exists()){
-await set(userRef,{
-senha,
-tokecoin:0,
-online:true,
-amigos:{}
-});
+await set(userRef,{senha,online:true});
 }else if(snap.val().senha!==senha){
 return alert("Senha errada");
 }
@@ -170,109 +133,70 @@ startApp();
 };
 
 /* START */
-async function startApp(){
+function startApp(){
 const onlineRef=ref(db,"usuarios/"+usuarioAtual+"/online");
-await set(onlineRef,true);
+set(onlineRef,true);
 onDisconnect(onlineRef).set(false);
 
-onValue(ref(db,"usuarios/"+usuarioAtual),(snap)=>{
-const d=snap.val();
-userInfo.innerHTML=`
-<b>${usuarioAtual}</b>
-<span class="coin">
-<img src="./TokeCoin.png" style="width:16px;vertical-align:middle;">
-${d.tokecoin||0}
-</span>
-`;
-});
+userInfo.innerHTML="<b>"+usuarioAtual+"</b>";
 
 goHome();
 }
 
-/* HOME */
+/* HOME (MENU) */
 window.goHome=function(){
-onValue(ref(db,"usuarios/"+usuarioAtual+"/amigos"), async (snap)=>{
-
-let amigosHTML="";
-
-if(snap.exists()){
-for(const nome in snap.val()){
-const userSnap = await get(ref(db,"usuarios/"+nome));
-const d = userSnap.val();
-
-amigosHTML+=`
-<div class="userCard">
-<b>${nome}</b>
-<div class="${d.online?'online':'offline'}">
-${d.online?'● Online':'● Offline'}
-</div>
-</div>`;
-}
-}else{
-amigosHTML="<p>Sem amigos</p>";
-}
-
 content.innerHTML=`
-<h2>Olá, ${usuarioAtual}!</h2>
-<h3>Amigos:</h3>
-<div id="amigosLista">
-${amigosHTML}
+<div id="menu">
+
+<div class="card" onclick="openGames()">
+<img src="games.png">
+<div>Games</div>
+</div>
+
+<div class="card" onclick="openClub()">
+<img src="club.png">
+<div>Builders Club</div>
+</div>
+
+<div class="card" onclick="openProfile()">
+<img src="profile.png">
+<div>Profile</div>
+</div>
+
 </div>
 `;
-});
 };
 
-/* USERS */
-window.openUsers=function(){
-onValue(ref(db,"usuarios"), async snap=>{
+/* GAMES */
+window.openGames=function(){
+content.innerHTML="<h2>Games (em breve)</h2>";
+};
+
+/* CLUB */
+window.openClub=function(){
+content.innerHTML="<h2>Builders Club (em breve)</h2>";
+};
+
+/* PROFILE = TODOS USERS */
+window.openProfile=function(){
+onValue(ref(db,"usuarios"), snap=>{
 let html="<h2>Users</h2>";
 
-const myFriendsSnap = await get(ref(db,"usuarios/"+usuarioAtual+"/amigos"));
-const meusAmigos = myFriendsSnap.exists() ? myFriendsSnap.val() : {};
-
 snap.forEach(u=>{
-const nome=u.key;
-if(nome===usuarioAtual) return;
-
 const d=u.val();
-const jaAmigo = meusAmigos[nome];
 
 html+=`
 <div class="userCard">
-<b>${nome}</b>
-<div class="${d.online?'online':'offline'}">
+<b>${u.key}</b><br>
+<span class="${d.online?'online':'offline'}">
 ${d.online?'● Online':'● Offline'}
+</span>
 </div>
-
-<button class="btn"
-${jaAmigo?"disabled":""}
-onclick="addFriend('${nome}')">
-${jaAmigo?"Amigo ✔":"Adicionar"}
-</button>
-</div>`;
+`;
 });
 
 content.innerHTML=html;
 });
-};
-
-/* ADD FRIEND */
-window.addFriend=async function(nome){
-await set(ref(db,"usuarios/"+usuarioAtual+"/amigos/"+nome), true);
-await set(ref(db,"usuarios/"+nome+"/amigos/"+usuarioAtual), true);
-
-alert("Agora vocês são amigos!");
-openUsers();
-};
-
-/* BANK */
-window.openBank=function(){
-content.innerHTML=`<h2>Bank</h2><p>Em breve...</p>`;
-};
-
-/* SHOP */
-window.openShop=function(){
-content.innerHTML=`<h2>Shop</h2><p>Em breve...</p>`;
 };
 
 </script>
