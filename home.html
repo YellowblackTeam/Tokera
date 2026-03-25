@@ -23,7 +23,7 @@ justify-content:space-between;
 align-items:center;
 }
 
-/* MENU GRID */
+/* MENU */
 #menu{
 display:grid;
 grid-template-columns:repeat(2,1fr);
@@ -31,7 +31,6 @@ gap:15px;
 padding:20px;
 }
 
-/* CARDS */
 .card{
 background:linear-gradient(#2c5f9e,#1e3f6d);
 border-radius:10px;
@@ -39,11 +38,6 @@ padding:20px;
 text-align:center;
 cursor:pointer;
 box-shadow:0 0 10px rgba(0,0,0,0.5);
-transition:0.2s;
-}
-
-.card:hover{
-transform:scale(1.05);
 }
 
 .card img{
@@ -95,6 +89,7 @@ const db=getDatabase(app);
 const content=document.getElementById("content");
 const userInfo=document.getElementById("userInfo");
 
+/* USER */
 let usuarioAtual=localStorage.getItem("usuario");
 
 /* LOGIN */
@@ -136,16 +131,18 @@ usuarioAtual=nome;
 startApp();
 };
 
-/* START APP */
+/* START APP (ANTI TELA BRANCA) */
 function startApp(){
 const onlineRef=ref(db,"usuarios/"+usuarioAtual+"/online");
-set(onlineRef,true);
-onDisconnect(onlineRef).set(false);
 
-/* 👇 MOSTRA MENU IMEDIATO (ANTES DO FIREBASE) */
+/* 🔥 MOSTRA MENU NA HORA */
 goHome();
 
-/* 👇 DEPOIS atualiza topbar */
+/* 🔥 FIREBASE SEM TRAVAR */
+set(onlineRef,true).catch(()=>{});
+onDisconnect(onlineRef).set(false);
+
+/* 🔥 TOPBAR COM TOKECOIN */
 onValue(ref(db,"usuarios/"+usuarioAtual),(snap)=>{
 const d = snap.val() || {};
 
@@ -158,11 +155,16 @@ ${d.tokecoin || 0}
 </span>
 </div>
 `;
-});
-}
+}, (error)=>{
+console.log("Firebase erro:", error);
 
-/* IMPORTANTE */
-goHome();
+userInfo.innerHTML = `
+<div style="text-align:right">
+<b>${usuarioAtual}</b><br>
+<span style="font-size:12px;color:#ffd700;">0</span>
+</div>
+`;
+});
 }
 
 /* HOME */
@@ -222,5 +224,6 @@ content.innerHTML=html;
 };
 
 </script>
+
 </body>
 </html>
